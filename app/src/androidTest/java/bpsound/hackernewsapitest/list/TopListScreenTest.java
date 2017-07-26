@@ -9,15 +9,26 @@ import android.view.View;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import bpsound.hackernewsapitest.R;
+import bpsound.hackernewsapitest.apis.HackerNewsApi;
+import bpsound.hackernewsapitest.apis.NewsItem;
+import bpsound.hackernewsapitest.mvp.list.MainPresenter;
+import bpsound.hackernewsapitest.mvp.list.MainView;
+import io.reactivex.Observable;
 
 import static android.support.test.espresso.Espresso.onView;
-import static android.support.test.espresso.action.ViewActions.click;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
-import static android.support.test.espresso.contrib.RecyclerViewActions.scrollTo;
 import static android.support.test.espresso.core.deps.guava.base.Preconditions.checkArgument;
 import static android.support.test.espresso.matcher.ViewMatchers.hasDescendant;
 import static android.support.test.espresso.matcher.ViewMatchers.isAssignableFrom;
@@ -25,49 +36,77 @@ import static android.support.test.espresso.matcher.ViewMatchers.isDescendantOfA
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
 import static android.support.test.espresso.matcher.ViewMatchers.withText;
+import static com.jayway.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.allOf;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Created by elegantuniv on 2017. 7. 21..
  */
 
 @RunWith(AndroidJUnit4.class)
-@LargeTest
 public class TopListScreenTest {
 
-    private Matcher<View> withItemText(final String itemText) {
-        checkArgument(!TextUtils.isEmpty(itemText), "itemText cannot be null or empty");
-        return new TypeSafeMatcher<View>() {
-            @Override
-            public boolean matchesSafely(View item) {
-                return allOf(
-                        isDescendantOfA(isAssignableFrom(RecyclerView.class)),
-                        withText(itemText)).matches(item);
-            }
+    private static List<Integer> ITEMS;
+    private static NewsItem mItem;
+    private MainPresenter mPresenter;
 
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("is isDescendantOfA RV with text " + itemText);
-            }
-        };
+    private HackerNewsApi mNewsRepo;
+
+    private MainView mView;
+
+    @Before
+    public void setupTopListPresenter() {
+        mView = mock(MainView.class);
+        mNewsRepo = mock(HackerNewsApi.class);
+
+        mPresenter = new MainPresenter(mNewsRepo, mView);
+
+        ITEMS = new ArrayList<>();
+        for(int i=0; i<5; i++){
+            ITEMS.add(1);
+        }
+
+        mItem = new NewsItem();
+        mItem.setId(1);
+        mItem.setTitle("title");
+        mItem.setBy("writer");
+        mItem.setScore(22);
+        mItem.setTime(12345678);
+        mItem.setDescendants(8);
     }
 
     @Test
-    public void addItemToList() throws Exception {
-        String findingText = "test";
+    public void testPresenterWithRequestItem() {
+        final boolean[] finish = {false};
 
-        onView(withId(R.id.list)).perform(
-                scrollTo(hasDescendant(withText(findingText))));
+        when(mNewsRepo.getTopStories()).thenReturn(Observable.just(ITEMS));
+        when(mNewsRepo.getNewsItem(eq(mItem.getId()))).thenReturn(Observable.just(mItem));
 
-        onView(withItemText(findingText)).check(matches(isDisplayed()));
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                finish[0] = true;
+                return invocation;
+            }
+        }).when(mView).onSuccessRequestItem(mItem);
+
+        mPresenter.loadTopListItems();
+
+        await().until(new Runnable() {
+            @Override
+            public void run() {
+                while (!finish[0]) {
+                    verify(mNewsRepo, atLeastOnce()).getTopStories();
+                }
+            }
+        });
+        verify(mView, atLeastOnce()).onSuccessRequestItem(mItem);
     }
 
-    @Test
-    public void clickItem_moveCommentFragment() throws Exception {
-        // Click on the add note button
-//        onView(withId(R.id.fab_add_notes)).perform(click());
-
-        // Check if the add note screen is displayed
-//        onView(withId(R.id.add_note_title)).check(matches(isDisplayed()));
-    }
 }

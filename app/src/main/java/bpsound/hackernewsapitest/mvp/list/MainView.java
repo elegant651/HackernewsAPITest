@@ -1,5 +1,6 @@
 package bpsound.hackernewsapitest.mvp.list;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import bpsound.hackernewsapitest.apis.NewsItem;
@@ -14,4 +15,6 @@ public interface MainView {
     public void showLoading();
     public void hideLoading();
     public void onFailureRequest(String msg);
+
+    public void onSuccessTest(List<Integer> val);
 }

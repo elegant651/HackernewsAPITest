@@ -1,5 +1,6 @@
 package bpsound.hackernewsapitest.comments;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.when;
 public class CommentsPresenterTest {
 
     private static ArrayList<Integer> ITEMS;
+    private static CommentItem mItem;
     private CommentsPresenter mPresenter;
 
     @Mock
@@ -43,41 +45,21 @@ public class CommentsPresenterTest {
             ITEMS.add(i);
         }
 
+        mItem = new CommentItem();
+        mItem.setId(1);
+        mItem.setText("comment title");
+        mItem.setBy("writer");
+        mItem.setTime(12345678);
+
     }
 
     @Test
-    public void loadCommentsFromRepositoryAndLoadIntoView() {
-        CommentItem item = new CommentItem();
-        item.setId(1);
-        item.setText("comment title");
-        item.setBy("writer");
-        item.setTime(12345678);
-
-        when(mNewsRepo.getCommentItem(eq(item.getId()))).thenReturn(Observable.just(item));
-
-        mPresenter.loadCommentsItems(ITEMS, 0, 0);
-
-        verify(mView).onSuccessCommentItem(item, 0, 0);
+    public void testGetCommentItem() throws Exception{
+        when(mNewsRepo.getCommentItem(eq(mItem.getId()))).thenReturn(Observable.just(mItem));
+        mNewsRepo.getCommentItem(1).subscribe(item -> {
+            Assert.assertEquals(item, mItem);
+        });
     }
 
-    @Test
-    public void loadRepliesFromRepositoryAndLoadIntoView() {
-        CommentItem item = new CommentItem();
-        item.setId(1);
-        item.setText("comment title");
-        item.setBy("writer");
-        item.setTime(12345678);
-        ArrayList<Integer> alReplies = new ArrayList<>();
-        for(int i=5; i<10; i++){
-            alReplies.add(i);
-        }
-        item.setKids(alReplies);
 
-        when(mNewsRepo.getCommentItem(eq(item.getId()))).thenReturn(Observable.just(item));
-
-
-        mPresenter.loadCommentsItems((ArrayList)item.getKids(), 1, 0);
-
-        verify(mView).onSuccessCommentItem(item, 1, 0);
-    }
 }

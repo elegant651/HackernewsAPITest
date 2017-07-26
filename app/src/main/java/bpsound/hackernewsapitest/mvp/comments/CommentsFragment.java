@@ -93,10 +93,4 @@ public class CommentsFragment extends Fragment implements CommentsView{
         super.onDestroyView();
         mUnbinder.unbind();
     }
-
-    @Override
-    public void onDestroy(){
-        super.onDestroy();
-        mPresenter.dispose();
-    }
 }

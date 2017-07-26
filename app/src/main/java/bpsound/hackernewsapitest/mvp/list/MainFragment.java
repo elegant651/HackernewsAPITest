@@ -5,16 +5,19 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import bpsound.hackernewsapitest.MainActivity;
 import bpsound.hackernewsapitest.R;
 import bpsound.hackernewsapitest.apis.HackerNewsService;
 import bpsound.hackernewsapitest.apis.NewsItem;
+import bpsound.hackernewsapitest.common.Constants;
 import bpsound.hackernewsapitest.common.DialogUtils;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -75,6 +78,10 @@ public class MainFragment extends Fragment implements MainView {
         mPresenter.loadTopListItems();
     }
 
+    @Override
+    public void onSuccessTest(List<Integer> val) {
+        Log.d(Constants.TAG, ""+val.size());
+    }
 
     @Override
     public void onSuccessRequestItem(NewsItem item) {
@@ -102,9 +109,4 @@ public class MainFragment extends Fragment implements MainView {
         mUnbinder.unbind();
     }
 
-    @Override
-    public void onDestroy(){
-        super.onDestroy();
-        mPresenter.dispose();
-    }
 }

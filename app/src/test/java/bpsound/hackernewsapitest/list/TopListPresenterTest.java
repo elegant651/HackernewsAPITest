@@ -1,10 +1,10 @@
 package bpsound.hackernewsapitest.list;
 
+import junit.framework.Assert;
+
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
@@ -16,9 +16,7 @@ import bpsound.hackernewsapitest.mvp.list.MainPresenter;
 import bpsound.hackernewsapitest.mvp.list.MainView;
 import io.reactivex.Observable;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -28,6 +26,7 @@ import static org.mockito.Mockito.when;
 public class TopListPresenterTest {
 
     private static List<Integer> ITEMS;
+    private static NewsItem mItem;
     private MainPresenter mPresenter;
 
     @Mock
@@ -47,37 +46,31 @@ public class TopListPresenterTest {
             ITEMS.add(i);
         }
 
+        mItem = new NewsItem();
+        mItem.setId(1);
+        mItem.setTitle("title");
+        mItem.setBy("writer");
+        mItem.setScore(22);
+        mItem.setTime(12345678);
+        mItem.setDescendants(8);
     }
 
-
     @Test
-    public void loadItemsFromRepositoryAndLoadIntoView() {
+    public void testGetTopStories() throws Exception{
         when(mNewsRepo.getTopStories()).thenReturn(Observable.just(ITEMS));
-
-        mPresenter.loadTopListItems();
-
-        InOrder inOrder = Mockito.inOrder(mView);
-        inOrder.verify(mView).showLoading();
-        inOrder.verify(mView).hideLoading();
+        ArrayList<Integer> alList = new ArrayList<>();
+        mNewsRepo.getTopStories().flatMap(Observable::fromIterable).subscribe(item -> {
+            alList.add(item);
+        });
+        Assert.assertEquals(alList.size(), ITEMS.size());
     }
 
-
     @Test
-    public void loadEachItemFromRepository() {
-        when(mNewsRepo.getTopStories()).thenReturn(Observable.just(ITEMS));
-
-        NewsItem item = new NewsItem();
-        item.setId(1);
-        item.setTitle("title");
-        item.setBy("writer");
-        item.setScore(22);
-        item.setTime(12345678);
-        item.setDescendants(8);
-        when(mNewsRepo.getNewsItem(eq(item.getId()))).thenReturn(Observable.just(item));
-
-        mPresenter.loadTopListItems();
-
-        verify(mView).onSuccessRequestItem(item);
+    public void testGetNewsItem() {
+        when(mNewsRepo.getNewsItem(eq(mItem.getId()))).thenReturn(Observable.just(mItem));
+        mNewsRepo.getNewsItem(1).subscribe(item -> {
+            Assert.assertEquals(item, mItem);
+        });
     }
 
 }

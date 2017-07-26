@@ -2,6 +2,9 @@ package bpsound.hackernewsapitest.mvp.list;
 
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import bpsound.hackernewsapitest.apis.HackerNewsApi;
 import bpsound.hackernewsapitest.apis.NewsItem;
 import bpsound.hackernewsapitest.common.Constants;
@@ -19,26 +22,23 @@ import io.reactivex.schedulers.Schedulers;
 public class MainPresenter {
     private HackerNewsApi mService;
     private MainView mView;
-    private CompositeDisposable mDisposables;
 
     public MainPresenter(HackerNewsApi service, MainView view) {
         this.mService = service;
         this.mView = view;
-        this.mDisposables = new CompositeDisposable();
     }
 
     public void loadTopListItems() {
-        mView.showLoading();
 
-        mDisposables.add(
           mService.getTopStories()
+                  .subscribeOn(Schedulers.io())
                   .flatMap(Observable::fromIterable)
                   .flatMap(
                     item -> {
-                        Observable<NewsItem> newsObservable = mService.getNewsItem(item);
+                        Observable<NewsItem> newsObservable = mService.getNewsItem(item)
+                                .filter(item2 -> item2.getTitle() != null && !item2.getTitle().isEmpty());
                         return newsObservable;
                     })
-                  .subscribeOn(Schedulers.newThread())
                   .observeOn(AndroidSchedulers.mainThread())
                   .subscribeWith(
                         new DisposableObserver<NewsItem>(){
@@ -50,21 +50,15 @@ public class MainPresenter {
                             @Override
                             public void onError(Throwable e) {
                                 Log.e(Constants.TAG, "woops we got an error while getting the data");
-                                mView.hideLoading();
                                 mView.onFailureRequest(Constants.MSG_RESPONSE_FLAG_0);
                             }
 
                             @Override
                             public void onNext(NewsItem item) {
                                 Log.d(Constants.TAG, item.getTitle());
-                                mView.hideLoading();
                                 mView.onSuccessRequestItem(item);
                             }
-                  }));
+                  });
 
-    }
-
-    public void dispose() {
-        this.mDisposables.dispose();
     }
 }
